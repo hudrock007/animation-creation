@@ -1,0 +1,25 @@
+{
+  "name": "animation-creation",
+  "version": "1.0.0",
+  "description": "Audio & video builder for easy animation videos",
+  "main": "animation-deck-vr_1.0.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000 --bind 127.0.0.1",
+    "serve": "npx live-server --port=8000"
+  },
+  "keywords": [
+    "animation",
+    "scene",
+    "keyframe",
+    "plugin",
+    "canvas",
+    "video",
+    "audio"
+  ],
+  "author": "hudrock007",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
