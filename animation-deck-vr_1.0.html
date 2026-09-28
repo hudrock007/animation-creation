@@ -1,0 +1,841 @@
+<!DOCTYPE html> <!-- Declares the HTML5 document type -->
+<html lang="en" class="h-full bg-slate-900 text-slate-100"> <!-- Root HTML element with dark slate theme styling -->
+<head> <!-- Head element containing metadata, scripts, and stylesheets -->
+    <meta charset="UTF-8"> <!-- Sets character encoding to UTF-8 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Ensures responsive viewport scaling across mobile and desktop devices -->
+    <title>Scene Animation Creator with Plugins</title> <!-- Document title displayed in the browser tab -->
+    <!-- Tailwind CSS CDN for utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script> <!-- Loads Tailwind CSS framework -->
+    <!-- Font Awesome Icon Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> <!-- Loads icon icons -->
+    <!-- Google Fonts: Inter font family -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"> <!-- Loads Inter font -->
+    
+    <style> /* Embedded custom CSS for specialized UI styling */
+        body { font-family: 'Inter', sans-serif; } /* Sets primary typography to Inter */
+        /* Custom scrollbar styling for slick dark theme UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; } /* Defines width and height for scrollbars */
+        ::-webkit-scrollbar-track { background: #0f172a; } /* Sets track background to dark slate */
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; } /* Styles thumb handle */
+        ::-webkit-scrollbar-thumb:hover { background: #475569; } /* Highlights thumb on hover */
+        
+        /* Custom range slider styling */
+        input[type=range] { -webkit-appearance: none; background: #334155; border-radius: 4px; height: 6px; } /* Resets default range appearance */
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #38bdf8; cursor: pointer; } /* Custom slider thumb */
+        
+        /* Grid background pattern for animation canvas wrapper */
+        .canvas-grid { /* Canvas grid background class */
+            background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px); /* Creates dot grid */
+            background-size: 20px 20px; /* Spacing between grid dots */
+        } /* End canvas-grid styling */
+    </style> <!-- End of embedded CSS block -->
+</head> <!-- End of HTML head -->
+
+<body class="h-full flex flex-col overflow-hidden select-none"> <!-- Body container with flex column layout preventing window scroll -->
+
+    <!-- SECTION PIVOT: Header Navigation & Toolbar -->
+    <header class="h-14 bg-slate-950 border-b border-slate-800 px-4 flex items-center justify-between z-20"> <!-- Header layout container -->
+        <div class="flex items-center space-x-3"> <!-- Left side logo and title container -->
+            <div class="p-2 bg-indigo-600 rounded-lg text-white shadow-lg shadow-indigo-500/30"> <!-- Icon badge wrapper -->
+                <i class="fa-solid fa-wand-magic-sparkles text-lg"></i> <!-- Magic wand icon -->
+            </div> <!-- End icon badge -->
+            <div> <!-- Title and tagline text container -->
+                <h1 class="font-bold text-base leading-tight tracking-wide text-slate-100">Scene Animator</h1> <!-- Application main heading -->
+                <p class="text-xs text-slate-400">Plugin Engine & Keyframe Suite</p> <!-- Subtitle description -->
+            </div> <!-- End title block -->
+        </div> <!-- End left header section -->
+
+        <div class="flex items-center space-x-2"> <!-- Center/Right controls action bar -->
+            <button id="btn-play" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-medium text-xs flex items-center gap-2 transition shadow-md shadow-emerald-900/30"> <!-- Play button -->
+                <i class="fa-solid fa-play"></i> Play <!-- Play icon and text -->
+            </button> <!-- End play button -->
+            <button id="btn-pause" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-md font-medium text-xs flex items-center gap-2 transition hidden"> <!-- Pause button -->
+                <i class="fa-solid fa-pause"></i> Pause <!-- Pause icon and text -->
+            </button> <!-- End pause button -->
+            <button id="btn-stop" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md font-medium text-xs transition"> <!-- Reset button -->
+                <i class="fa-solid fa-rotate-left"></i> <!-- Reset icon -->
+            </button> <!-- End reset button -->
+            <div class="h-4 w-px bg-slate-800 mx-1"></div> <!-- Vertical UI separator divider -->
+            <select id="preset-select" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-md px-2 py-1.5 focus:outline-none focus:border-indigo-500"> <!-- Preset switcher dropdown -->
+                <option value="">Load Preset Scene...</option> <!-- Placeholder option -->
+                <option value="cosmic">Cosmic Galaxy</option> <!-- Cosmic preset -->
+                <option value="neon">Neon Bounce</option> <!-- Neon bounce preset -->
+                <option value="particle">Particle Wave</option> <!-- Particle wave preset -->
+            </select> <!-- End preset selector -->
+            <button id="btn-export" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-md font-medium text-xs flex items-center gap-1.5 transition"> <!-- Export JSON button -->
+                <i class="fa-solid fa-download"></i> Export <!-- Download icon -->
+            </button> <!-- End export button -->
+        </div> <!-- End header action buttons -->
+    </header> <!-- End application header -->
+
+    <!-- SECTION PIVOT: Main Workspace Layout Grid -->
+    <div class="flex-1 flex overflow-hidden"> <!-- Main content layout containing sidebars and canvas -->
+        
+        <!-- SECTION PIVOT: Left Sidebar - Object Library & Layer Tree -->
+        <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col z-10"> <!-- Left sidebar container -->
+            <!-- Objects Panel Header -->
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between"> <!-- Panel section title -->
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Add Objects</span> <!-- Section label -->
+                <i class="fa-solid fa-plus text-slate-500 text-xs"></i> <!-- Plus indicator icon -->
+            </div> <!-- End panel header -->
+
+            <!-- Shape Creation Quick Actions -->
+            <div class="p-3 grid grid-cols-3 gap-2 border-b border-slate-800"> <!-- 3-column button grid -->
+                <button data-add-shape="rect" class="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/50 rounded flex flex-col items-center justify-center text-slate-300 text-xs transition"> <!-- Add Rectangle -->
+                    <i class="fa-regular fa-square text-indigo-400 mb-1 text-base"></i> Rect <!-- Icon and text -->
+                </button> <!-- End rect button -->
+                <button data-add-shape="circle" class="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/50 rounded flex flex-col items-center justify-center text-slate-300 text-xs transition"> <!-- Add Circle -->
+                    <i class="fa-regular fa-circle text-sky-400 mb-1 text-base"></i> Circle <!-- Icon and text -->
+                </button> <!-- End circle button -->
+                <button data-add-shape="star" class="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/50 rounded flex flex-col items-center justify-center text-slate-300 text-xs transition"> <!-- Add Star -->
+                    <i class="fa-regular fa-star text-amber-400 mb-1 text-base"></i> Star <!-- Icon and text -->
+                </button> <!-- End star button -->
+            </div> <!-- End shape creator grid -->
+
+            <!-- Layers / Scene Graph List -->
+            <div class="p-3 border-b border-slate-800"> <!-- Layers header -->
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Scene Layers</span> <!-- Layers header text -->
+            </div> <!-- End layers header -->
+            
+            <div id="object-list" class="flex-1 overflow-y-auto p-2 space-y-1"> <!-- Container where dynamic object layer rows render -->
+                <!-- Dynamic object items injected via JS -->
+            </div> <!-- End object list container -->
+        </aside> <!-- End Left Sidebar -->
+
+        <!-- SECTION PIVOT: Central Canvas & Viewport Container -->
+        <main class="flex-1 flex flex-col bg-slate-900 relative overflow-hidden"> <!-- Viewport container -->
+            <!-- Canvas Canvas Wrapper -->
+            <div id="canvas-container" class="flex-1 relative flex items-center justify-center canvas-grid p-4 overflow-hidden"> <!-- Canvas wrapper with background grid -->
+                <canvas id="scene-canvas" class="bg-slate-950 rounded-lg border border-slate-800 shadow-2xl transition-all"></canvas> <!-- Main HTML5 interactive Canvas -->
+                
+                <!-- On-Screen HUD Info Overlay -->
+                <div class="absolute top-6 left-6 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-400 flex items-center space-x-4 pointer-events-none"> <!-- Floating HUD -->
+                    <span>Time: <strong id="hud-time" class="text-indigo-400">0.00s</strong></span> <!-- Time display -->
+                    <span>FPS: <strong id="hud-fps" class="text-emerald-400">60</strong></span> <!-- FPS display -->
+                    <span>Objects: <strong id="hud-count" class="text-sky-400">0</strong></span> <!-- Object count display -->
+                </div> <!-- End Floating HUD -->
+            </div> <!-- End Canvas Container -->
+
+            <!-- SECTION PIVOT: Bottom Animation Timeline Panel -->
+            <div class="h-44 bg-slate-950 border-t border-slate-800 flex flex-col z-10"> <!-- Timeline box -->
+                <div class="h-8 border-b border-slate-800 px-4 flex items-center justify-between text-xs text-slate-400"> <!-- Timeline bar controls -->
+                    <div class="flex items-center space-x-3"> <!-- Left timeline info -->
+                        <span class="font-semibold text-slate-300">TIMELINE</span> <!-- Timeline header label -->
+                        <button id="btn-add-keyframe" class="px-2 py-0.5 bg-indigo-600/80 hover:bg-indigo-600 text-white rounded text-2xs transition"> <!-- Add keyframe trigger -->
+                            <i class="fa-solid fa-key text-3xs"></i> + Keyframe <!-- Button text -->
+                        </button> <!-- End keyframe button -->
+                    </div> <!-- End timeline info -->
+                    <div class="text-2xs text-slate-500">Drag scrubber to navigate time</div> <!-- Drag tip -->
+                </div> <!-- End timeline bar -->
+
+                <!-- Timeline Scrubber & Track View -->
+                <div class="flex-1 relative p-3 overflow-x-auto overflow-y-hidden"> <!-- Timeline interactive canvas area -->
+                    <div id="timeline-track" class="w-full h-full relative bg-slate-900 rounded border border-slate-800/80 cursor-pointer"> <!-- Main timeline track rail -->
+                        <!-- Timeline Playhead Scrubber Line -->
+                        <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 pointer-events-none"> <!-- Playhead vertical indicator -->
+                            <div class="w-3 h-3 bg-red-500 rounded-full -ml-1.25 -mt-1 shadow-md shadow-red-500/50"></div> <!-- Scrubber top handle -->
+                        </div> <!-- End playhead -->
+                        <!-- Keyframe Markers Container -->
+                        <div id="keyframe-markers" class="w-full h-full relative"> <!-- Dynamic keyframe diamond icons container -->
+                            <!-- Dynamically generated keyframe nodes -->
+                        </div> <!-- End keyframe markers container -->
+                    </div> <!-- End timeline track -->
+                </div> <!-- End timeline canvas wrapper -->
+            </div> <!-- End Timeline Panel -->
+        </main> <!-- End Main Workspace -->
+
+        <!-- SECTION PIVOT: Right Sidebar - Inspector & Plugin Manager -->
+        <aside class="w-80 bg-slate-950 border-l border-slate-800 flex flex-col z-10"> <!-- Right sidebar container -->
+            <!-- Inspector Tab Switcher Navigation -->
+            <div class="flex border-b border-slate-800 text-xs"> <!-- Tab header container -->
+                <button id="tab-props" class="flex-1 py-2.5 font-medium border-b-2 border-indigo-500 text-indigo-400 bg-slate-900/50">Properties</button> <!-- Properties tab -->
+                <button id="tab-plugins" class="flex-1 py-2.5 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">Plugins</button> <!-- Plugins tab -->
+            </div> <!-- End tab switcher -->
+
+            <!-- Tab Content 1: Object Inspector Properties -->
+            <div id="panel-props" class="flex-1 overflow-y-auto p-4 space-y-4"> <!-- Inspector form panel -->
+                <div id="no-selection-msg" class="text-xs text-slate-500 text-center py-8">Select an object on canvas to edit properties</div> <!-- Default empty state -->
+                
+                <div id="inspector-form" class="space-y-3 hidden"> <!-- Dynamic properties input fields -->
+                    <div> <!-- Object Label Field -->
+                        <label class="text-2xs text-slate-400 font-semibold block mb-1">LABEL</label> <!-- Label header -->
+                        <input type="text" id="prop-name" class="w-full bg-slate-900 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-indigo-500"> <!-- Object name input -->
+                    </div> <!-- End Label Field -->
+
+                    <div class="grid grid-cols-2 gap-2"> <!-- Position Coordinates Input Grid -->
+                        <div> <!-- Pos X -->
+                            <label class="text-2xs text-slate-400 block mb-1">POS X</label> <!-- Label X -->
+                            <input type="number" id="prop-x" class="w-full bg-slate-900 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200"> <!-- Input X -->
+                        </div> <!-- End Pos X -->
+                        <div> <!-- Pos Y -->
+                            <label class="text-2xs text-slate-400 block mb-1">POS Y</label> <!-- Label Y -->
+                            <input type="number" id="prop-y" class="w-full bg-slate-900 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200"> <!-- Input Y -->
+                        </div> <!-- End Pos Y -->
+                    </div> <!-- End Position Grid -->
+
+                    <div class="grid grid-cols-2 gap-2"> <!-- Scale & Rotation Input Grid -->
+                        <div> <!-- Scale Input -->
+                            <label class="text-2xs text-slate-400 block mb-1">SCALE</label> <!-- Label Scale -->
+                            <input type="number" step="0.1" id="prop-scale" class="w-full bg-slate-900 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200"> <!-- Scale Input -->
+                        </div> <!-- End Scale -->
+                        <div> <!-- Rotation Input -->
+                            <label class="text-2xs text-slate-400 block mb-1">ROTATION (°)</label> <!-- Label Rotation -->
+                            <input type="number" id="prop-rotation" class="w-full bg-slate-900 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200"> <!-- Rotation Input -->
+                        </div> <!-- End Rotation -->
+                    </div> <!-- End Scale/Rot Grid -->
+
+                    <div> <!-- Fill Color Input Picker -->
+                        <label class="text-2xs text-slate-400 block mb-1">COLOR</label> <!-- Color label -->
+                        <div class="flex gap-2"> <!-- Color input row -->
+                            <input type="color" id="prop-color" class="h-7 w-10 bg-transparent cursor-pointer rounded"> <!-- Color swatch selector -->
+                            <input type="text" id="prop-color-hex" class="flex-1 bg-slate-900 border border-slate-800 text-xs rounded px-2 py-1 text-slate-200 font-mono"> <!-- Hex string input -->
+                        </div> <!-- End color row -->
+                    </div> <!-- End Fill Color Input -->
+
+                    <button id="btn-delete-object" class="w-full mt-4 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded text-xs transition"> <!-- Delete object action button -->
+                        <i class="fa-solid fa-trash text-xs mr-1"></i> Delete Object <!-- Button text -->
+                    </button> <!-- End Delete button -->
+                </div> <!-- End inspector form -->
+            </div> <!-- End Tab Content 1 -->
+
+            <!-- Tab Content 2: Plugin Engine Manager -->
+            <div id="panel-plugins" class="flex-1 overflow-y-auto p-4 space-y-4 hidden"> <!-- Plugins engine panel -->
+                <div class="text-xs text-slate-400 mb-2">Enable extensible scene plugins to modify rendering and behavior:</div> <!-- Plugin intro description -->
+                
+                <div id="plugin-list" class="space-y-3"> <!-- Dynamic Plugin Card List Container -->
+                    <!-- Dynamic plugin toggle cards injected by JS -->
+                </div> <!-- End Plugin Card Container -->
+            </div> <!-- End Tab Content 2 -->
+        </aside> <!-- End Right Sidebar -->
+    </div> <!-- End Main Workspace Grid -->
+
+    <!-- SECTION PIVOT: Core JavaScript Application Engine -->
+    <script>
+        // SECTION PIVOT: State Definitions & Application Storage
+        const state = { // Primary reactive state dictionary
+            canvas: null, // HTML Canvas DOM reference holder
+            ctx: null, // Canvas 2D Rendering Context
+            isPlaying: false, // Animation play status flag
+            currentTime: 0, // Current animation playback head timestamp in seconds
+            duration: 10, // Maximum timeline length in seconds
+            fps: 60, // Targeted animation render frames per second
+            objects: [], // Collection array of scene graphic elements
+            selectedObjectId: null, // ID of currently highlighted/selected object
+            lastTimestamp: 0, // High-res clock timestamp for frame delta calculations
+            plugins: {} // Active registered plugin module instances
+        }; // End state object definition
+
+        // SECTION PIVOT: Plugin Framework & Engine Base Class
+        class ScenePlugin { // Base class for plugin modular system
+            constructor(id, name, description) { // Constructor initializing metadata
+                this.id = id; // Unique plugin identifier string
+                this.name = name; // Readable plugin title display
+                this.description = description; // Short description text
+                this.enabled = false; // Initial plugin active state toggle
+                this.params = {}; // User-configurable plugin parameters
+            } // End constructor
+            
+            onInit(state) {} // Plugin lifecycle hook called on initial load
+            onPreRender(ctx, state, deltaTime) {} // Lifecycle hook executed before drawing frame
+            onObjectRender(ctx, object, state) {} // Lifecycle hook executed when drawing individual objects
+            onPostRender(ctx, state, deltaTime) {} // Lifecycle hook executed after drawing all objects
+        } // End ScenePlugin base class
+
+        // SECTION PIVOT: Plugin Implementation - Glow / Neon Effects Plugin
+        class GlowPlugin extends ScenePlugin { // Glow plugin definition
+            constructor() { // Glow plugin constructor
+                super('glow', 'Glow & Bloom', 'Applies dynamic neon aura to all rendering objects.'); // Invoke super constructor
+                this.params = { blurAmount: 15 }; // Default blur radius parameter
+            } // End constructor
+            onObjectRender(ctx, object) { // Hook called during object drawing
+                if (!this.enabled) return; // Skip execution if plugin disabled
+                ctx.shadowBlur = this.params.blurAmount; // Set shadow blur pixel radius
+                ctx.shadowColor = object.color; // Match glow shadow color to object color
+            } // End onObjectRender
+        } // End GlowPlugin class
+
+        // SECTION PIVOT: Plugin Implementation - Ambient Dust Particles Plugin
+        class DustParticlePlugin extends ScenePlugin { // Ambient floating dust particles plugin
+            constructor() { // Dust particle constructor
+                super('dust', 'Ambient Dust', 'Renders background floating light particles across scene.'); // Call super
+                this.particles = []; // Particle storage list
+                this.params = { particleCount: 40 }; // Default particle density count
+            } // End constructor
+            onInit(state) { // Initialize dust particles
+                this.particles = Array.from({ length: this.params.particleCount }, () => ({ // Build random particle array
+                    x: Math.random() * 800, // Random X coordinate position
+                    y: Math.random() * 600, // Random Y coordinate position
+                    radius: Math.random() * 2 + 1, // Radius size between 1px and 3px
+                    speedY: Math.random() * -0.5 - 0.1, // Vertical floating speed upward
+                    opacity: Math.random() * 0.5 + 0.2 // Alpha opacity transparency
+                })); // End array generator mapping
+            } // End onInit
+            onPreRender(ctx, state, deltaTime) { // Render dust in background before objects
+                if (!this.enabled) return; // Guard clause for disabled state
+                ctx.save(); // Save canvas context state transform matrix
+                this.particles.forEach(p => { // Loop through registered dust particles
+                    p.y += p.speedY; // Advance particle position upward
+                    if (p.y < 0) p.y = state.canvas.height; // Wrap particle back to canvas bottom
+                    ctx.beginPath(); // Start new arc vector path
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); // Draw circle geometry
+                    ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`; // Color fill with alpha
+                    ctx.fill(); // Fill circle on canvas
+                }); // End particle loop
+                ctx.restore(); // Restore context matrix state
+            } // End onPreRender
+        } // End DustParticlePlugin class
+
+        // SECTION PIVOT: Plugin Implementation - Motion Trail / Ghosting Plugin
+        class MotionTrailPlugin extends ScenePlugin { // Ghosting trail effect plugin
+            constructor() { // Trail constructor
+                super('trails', 'Motion Trails', 'Leaves smooth lingering visual trail ghosts behind objects.'); // Invoke super
+                this.params = { fadeOpacity: 0.25 }; // Trail background fade alpha coefficient
+            } // End constructor
+            onPreRender(ctx, state) { // Draw semi-transparent background to create trail persistence
+                if (!this.enabled) return; // Skip if disabled
+                ctx.save(); // Save matrix
+                ctx.fillStyle = `rgba(15, 23, 42, ${this.params.fadeOpacity})`; // Semi-dark canvas clear fill
+                ctx.fillRect(0, 0, state.canvas.width, state.canvas.height); // Overlay overlay rect over canvas frame
+                ctx.restore(); // Restore matrix
+            } // End onPreRender
+        } // End MotionTrailPlugin class
+
+        // SECTION PIVOT: Scene Object Data Model & Rendering Logic
+        class SceneObject { // Individual object model class
+            constructor(type, x = 200, y = 200) { // Constructor with defaults
+                this.id = 'obj_' + Math.random().toString(36).substr(2, 9); // Generate unique ID string
+                this.name = `${type.charAt(0).toUpperCase() + type.slice(1)} ${state.objects.length + 1}`; // Human readable layer name
+                this.type = type; // Shape type: rect, circle, star
+                this.x = x; // Horizontal coordinate
+                this.y = y; // Vertical coordinate
+                this.scale = 1.0; // Scale size multiplier
+                this.rotation = 0; // Rotation angle in degrees
+                this.color = type === 'rect' ? '#6366f1' : (type === 'circle' ? '#0ea5e9' : '#f59e0b'); // Default color palette assignment
+                this.keyframes = [ // Keyframe timeline tracks array
+                    { time: 0, x: x, y: y, scale: 1.0, rotation: 0 }, // Keyframe frame 0s
+                    { time: 5, x: x + 150, y: y, scale: 1.5, rotation: 180 }, // Keyframe frame 5s
+                    { time: 10, x: x, y: y, scale: 1.0, rotation: 360 } // Keyframe frame 10s
+                ]; // End keyframe array initialization
+            } // End constructor
+
+            // Interpolates animated values based on keyframe timeline timestamp
+            updateTransformAtTime(time) { // Calculate live properties at time t
+                if (this.keyframes.length === 0) return; // Guard clause for empty keyframes
+                
+                // Sort keyframes sequentially by time parameter
+                const sorted = [...this.keyframes].sort((a, b) => a.time - b.time); // Keyframes sorted ascending
+                
+                // Handle edge boundaries before first keyframe or after last keyframe
+                if (time <= sorted[0].time) { // Before first keyframe
+                    this.applyKeyframeState(sorted[0]); // Snap to start keyframe values
+                    return; // Exit method
+                } // End boundary check 1
+                if (time >= sorted[sorted.length - 1].time) { // After last keyframe
+                    this.applyKeyframeState(sorted[sorted.length - 1]); // Snap to end keyframe values
+                    return; // Exit method
+                } // End boundary check 2
+
+                // Find keyframe interval pair spanning the target current time
+                for (let i = 0; i < sorted.length - 1; i++) { // Loop keyframe segments
+                    const k1 = sorted[i]; // Start boundary keyframe
+                    const k2 = sorted[i + 1]; // End boundary keyframe
+                    if (time >= k1.time && time <= k2.time) { // Current time falls inside segment
+                        const factor = (time - k1.time) / (k2.time - k1.time); // Linear interpolation fraction scalar (0.0 to 1.0)
+                        this.x = k1.x + (k2.x - k1.x) * factor; // Interpolate X position
+                        this.y = k1.y + (k2.y - k1.y) * factor; // Interpolate Y position
+                        this.scale = k1.scale + (k2.scale - k1.scale) * factor; // Interpolate Scale multiplier
+                        this.rotation = k1.rotation + (k2.rotation - k1.rotation) * factor; // Interpolate Rotation degree angle
+                        break; // Stop keyframe linear interpolation search
+                    } // End interval match branch
+                } // End keyframe traversal loop
+            } // End updateTransformAtTime
+
+            applyKeyframeState(kf) { // Assign keyframe attributes directly
+                this.x = kf.x; // Copy position X
+                this.y = kf.y; // Copy position Y
+                this.scale = kf.scale; // Copy scale ratio
+                this.rotation = kf.rotation; // Copy rotation angle
+            } // End applyKeyframeState method
+
+            draw(ctx) { // Render current object frame onto canvas context
+                ctx.save(); // Save canvas context matrix transform state
+                ctx.translate(this.x, this.y); // Translate transform matrix origin to object center
+                ctx.rotate((this.rotation * Math.PI) / 180); // Convert degrees to radians and apply rotation
+                ctx.scale(this.scale, this.scale); // Apply scale transform factors
+
+                ctx.fillStyle = this.color; // Assign fill style color palette
+
+                // Render vector graphic geometry based on shape type classification
+                if (this.type === 'rect') { // Square/rectangle path rendering
+                    ctx.fillRect(-30, -30, 60, 60); // Draw centered 60x60 square shape
+                } else if (this.type === 'circle') { // Circle path rendering
+                    ctx.beginPath(); // Begin vector shape path
+                    ctx.arc(0, 0, 30, 0, Math.PI * 2); // Circle arc radius 30
+                    ctx.fill(); // Render color fill
+                } else if (this.type === 'star') { // Star polygon path rendering
+                    this.drawStar(ctx, 0, 0, 5, 30, 15); // Draw 5-pointed star graphic
+                } // End geometry type selection
+
+                // Render selection highlight border if object is active object selection
+                if (state.selectedObjectId === this.id) { // Active selection condition check
+                    ctx.strokeStyle = '#38bdf8'; // Sky blue border line color
+                    ctx.lineWidth = 2; // Border line stroke thickness
+                    ctx.strokeRect(-35, -35, 70, 70); // Render selection square outline
+                } // End active selection highlight
+
+                ctx.restore(); // Restore context state matrix back to original
+            } // End object draw method
+
+            drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) { // Helper to construct star polygon vector
+                let rot = (Math.PI / 2) * 3; // Initial starting angle orientation
+                let x = cx; // Center X location
+                let y = cy; // Center Y location
+                const step = Math.PI / spikes; // Subtended angle per spike vertex step
+
+                ctx.beginPath(); // Start star path outline vector
+                ctx.moveTo(cx, cy - outerRadius); // Move cursor to top apex vertex
+                for (let i = 0; i < spikes; i++) { // Loop number of star spikes
+                    x = cx + Math.cos(rot) * outerRadius; // Outer vertex X location calculation
+                    y = cy + Math.sin(rot) * outerRadius; // Outer vertex Y location calculation
+                    ctx.lineTo(x, y); // Draw segment vector line
+                    rot += step; // Increment rotation angle step
+
+                    x = cx + Math.cos(rot) * innerRadius; // Inner vertex X location calculation
+                    y = cy + Math.sin(rot) * innerRadius; // Inner vertex Y location calculation
+                    ctx.lineTo(x, y); // Draw segment vector line
+                    rot += step; // Increment rotation angle step
+                } // End star point calculation loop
+                ctx.lineTo(cx, cy - outerRadius); // Connect path back to top apex
+                ctx.closePath(); // Close vector shape path loop
+                ctx.fill(); // Render color fill for star polygon shape
+            } // End drawStar helper method
+        } // End SceneObject class
+
+        // SECTION PIVOT: System Initialization & Canvas Mounting
+        window.onload = function() { // Attach window loading event hook
+            initApplication(); // Trigger core system setup routine
+        }; // End window onload handle
+
+        function initApplication() { // System setup function definition
+            const canvas = document.getElementById('scene-canvas'); // Locate HTML canvas DOM node
+            const container = document.getElementById('canvas-container'); // Locate wrapper container DOM element
+            
+            // Set canvas dynamic responsive pixel dimensions
+            canvas.width = Math.min(container.clientWidth - 32, 800); // Compute responsive canvas width
+            canvas.height = 480; // Fixed canvas height resolution aspect ratio
+            
+            state.canvas = canvas; // Store canvas reference inside global state object
+            state.ctx = canvas.getContext('2d'); // Store 2D rendering engine context
+
+            // SECTION PIVOT: Registering & Mounting Plugins
+            registerPlugin(new GlowPlugin()); // Instantiate and register Glow effect plugin
+            registerPlugin(new DustParticlePlugin()); // Instantiate and register Dust particle plugin
+            registerPlugin(new MotionTrailPlugin()); // Instantiate and register Motion trail plugin
+
+            // Add default initial objects into state scene object graph
+            const rectObj = new SceneObject('rect', 200, 240); // Build default animated square
+            const circleObj = new SceneObject('circle', 400, 240); // Build default animated circle
+            state.objects.push(rectObj, circleObj); // Store initial objects in scene state list
+
+            // Canvas selection event listener
+            canvas.addEventListener('click', function(e) { // Add mouse click listener to canvas
+                const rect = canvas.getBoundingClientRect(); // Calculate current canvas screen bounding bounding rect
+                const mouseX = e.clientX - rect.left; // Convert viewport cursor X to local canvas coordinate X
+                const mouseY = e.clientY - rect.top; // Convert viewport cursor Y to local canvas coordinate Y
+                
+                let found = false; // Flag tracking if object clicked on canvas
+                state.objects.forEach(obj => { // Iterate all active scene objects
+                    const dist = Math.hypot(obj.x - mouseX, obj.y - mouseY); // Compute euclidean distance scalar from click center
+                    if (dist < 40) { // Click falls inside object interaction boundary bounding box radius
+                        state.selectedObjectId = obj.id; // Set target active selected object ID
+                        found = true; // Set click hit detection flag
+                    } // End hit detection block
+                }); // End objects loop
+                
+                if (!found) state.selectedObjectId = null; // Unselect object if canvas background clicked
+                renderObjectListUI(); // Refresh UI object layer tree list
+                updateInspectorUI(); // Refresh property editor inspector fields
+            }); // End canvas click event binding
+
+            setupTimeline(); // Bind timeline scrubber drag handles and controls
+            setupUIControls(); // Attach top toolbar & tab switcher button listeners
+            renderPluginListUI(); // Render list of plugins inside panel
+            renderObjectListUI(); // Build layer list UI items
+
+            // SECTION PIVOT: Starting Animation Engine Render Loop
+            requestAnimationFrame(animationLoop); // Kick off continuous requestAnimationFrame render clock engine loop
+        } // End initApplication function
+
+        function registerPlugin(plugin) { // Plugin registration function
+            state.plugins[plugin.id] = plugin; // Map plugin object reference inside global plugin state map
+            plugin.onInit(state); // Call plugin lifecycle initialization hook
+        } // End registerPlugin helper
+
+        // SECTION PIVOT: Main Continuous Render Loop Function
+        function animationLoop(timestamp) { // Continuous frame drawing engine algorithm
+            if (!state.lastTimestamp) state.lastTimestamp = timestamp; // Initialize frame timer clock
+            const deltaTime = (timestamp - state.lastTimestamp) / 1000; // Compute elapsed delta time fraction in seconds
+            state.lastTimestamp = timestamp; // Advance timer timestamp benchmark
+
+            // Advance scene playback time if animation status is playing
+            if (state.isPlaying) { // Playback flag active
+                state.currentTime += deltaTime; // Increment elapsed scenario keyframe timeline seconds
+                if (state.currentTime > state.duration) { // Loop boundary check against total timeline duration limit
+                    state.currentTime = 0; // Rewind back to timeline frame start 0s
+                } // End rewind condition
+                updatePlayheadUI(); // Position timeline scrubber head visually
+            } // End isPlaying condition
+
+            // Render background frame sequence steps
+            const ctx = state.ctx; // Acquire local shorthand 2D canvas context reference
+            
+            // Check if Motion Trails plugin is actively handling frame background clearing logic
+            if (!state.plugins['trails'] || !state.plugins['trails'].enabled) { // Standard frame clear check
+                ctx.fillStyle = '#0f172a'; // Reset default background dark canvas fill
+                ctx.fillRect(0, 0, state.canvas.width, state.canvas.height); // Blank clear entire canvas viewport bounding box
+            } // End context clear path
+
+            // 1. Invoke Plugin Pre-Render Lifecycle Stage
+            Object.values(state.plugins).forEach(p => p.onPreRender(ctx, state, deltaTime)); // Call onPreRender on active plugins
+
+            // 2. Compute object locations & draw scene graphics
+            state.objects.forEach(obj => { // Loop through scene objects
+                obj.updateTransformAtTime(state.currentTime); // Update keyframe interpolation for target frame timestamp
+                
+                // 3. Invoke Plugin Object-Level Render Hook Lifecycle Stage
+                Object.values(state.plugins).forEach(p => p.onObjectRender(ctx, obj, state)); // Execute plugin per-object visual extensions
+                
+                obj.draw(ctx); // Render core shape graphic paths to canvas context frame
+            }); // End objects draw array iteration
+
+            // 4. Invoke Plugin Post-Render Lifecycle Stage
+            Object.values(state.plugins).forEach(p => p.onPostRender(ctx, state, deltaTime)); // Execute post render overlays
+
+            // Update floating Heads-Up Display (HUD) statistics
+            document.getElementById('hud-time').innerText = state.currentTime.toFixed(2) + 's'; // Update live time code
+            document.getElementById('hud-fps').innerText = Math.round(1 / (deltaTime || 0.016)); // Calculate live FPS frame rate counter
+            document.getElementById('hud-count').innerText = state.objects.length; // Update live total object count number
+
+            requestAnimationFrame(animationLoop); // Re-queue engine loop call on next available screen refresh cycle
+        } // End animationLoop function
+
+        // SECTION PIVOT: Timeline Controls & Scrubber Logic
+        function setupTimeline() { // Initialize interactive animation keyframe timeline
+            const track = document.getElementById('timeline-track'); // Fetch timeline track DOM bar element
+            let isDragging = false; // Dragging state flag handle
+
+            function seek(e) { // Compute timeline seek coordinate function
+                const rect = track.getBoundingClientRect(); // Grab boundary box offset rectangle
+                const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width)); // Clamp click X coordinate within bar dimensions
+                const percent = clickX / rect.width; // Compute fraction percentage position (0.0 to 1.0)
+                state.currentTime = percent * state.duration; // Calculate scale timeline seek target timestamp
+                updatePlayheadUI(); // Position red playhead marker UI needle
+                if (state.selectedObjectId) updateInspectorUI(); // Refresh inspector property values for selected object
+            } // End seek logic function
+
+            track.addEventListener('mousedown', (e) => { isDragging = true; seek(e); }); // Handle mouse press drag start
+            window.addEventListener('mousemove', (e) => { if (isDragging) seek(e); }); // Handle drag tracking move
+            window.addEventListener('mouseup', () => { isDragging = false; }); // Handle mouse release drag stop
+        } // End setupTimeline function
+
+        function updatePlayheadUI() { // Position visual timeline red playhead indicator needle
+            const playhead = document.getElementById('playhead'); // Locate playhead DOM indicator
+            const percent = (state.currentTime / state.duration) * 100; // Calculate timestamp percentage offset
+            playhead.style.left = `${percent}%`; // Apply CSS position styling offset percentage
+        } // End updatePlayheadUI method
+
+        function renderKeyframeMarkersUI() { // Render visual keyframe diamond pins on timeline
+            const container = document.getElementById('keyframe-markers'); // Keyframe markers container wrapper DOM element
+            container.innerHTML = ''; // Wipe pre-existing keyframe pin elements
+
+            if (!state.selectedObjectId) return; // Exit early if no scene object is selected
+            const selectedObj = state.objects.find(o => o.id === state.selectedObjectId); // Search selected object reference model
+            if (!selectedObj) return; // Exit if object lookup returns null
+
+            selectedObj.keyframes.forEach(kf => { // Loop through object keyframe points
+                const marker = document.createElement('div'); // Create new DOM keyframe pin node
+                const percent = (kf.time / state.duration) * 100; // Calculate keyframe marker location offset percentage
+                marker.className = 'absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-indigo-400 rotate-45 border border-slate-900 cursor-pointer shadow hover:scale-125 transition-transform'; // Apply diamond keyframe icon CSS classes
+                marker.style.left = `calc(${percent}% - 6px)`; // Position keyframe diamond horizontally
+                marker.title = `Keyframe at ${kf.time}s`; // Add tooltip showing timecode stamp
+                container.appendChild(marker); // Append dynamic keyframe marker node into track DOM container
+            }); // End keyframe nodes generation loop
+        } // End renderKeyframeMarkersUI function
+
+        // SECTION PIVOT: UI Interaction & Inspector Event Bindings
+        function setupUIControls() { // Bind DOM button triggers and panel switchers
+            // Play Button Binding
+            document.getElementById('btn-play').addEventListener('click', () => { // Handle Play click
+                state.isPlaying = true; // Flip play state flag
+                document.getElementById('btn-play').classList.add('hidden'); // Hide play button
+                document.getElementById('btn-pause').classList.remove('hidden'); // Show pause button
+            }); // End Play binding
+
+            // Pause Button Binding
+            document.getElementById('btn-pause').addEventListener('click', () => { // Handle Pause click
+                state.isPlaying = false; // Flip play state flag
+                document.getElementById('btn-pause').classList.add('hidden'); // Hide pause button
+                document.getElementById('btn-play').classList.remove('hidden'); // Show play button
+            }); // End Pause binding
+
+            // Reset Button Binding
+            document.getElementById('btn-stop').addEventListener('click', () => { // Handle Stop/Reset click
+                state.isPlaying = false; // Pause playback timeline engine
+                state.currentTime = 0; // Rewind back to 0.00s frame timestamp
+                document.getElementById('btn-pause').classList.add('hidden'); // Hide pause button
+                document.getElementById('btn-play').classList.remove('hidden'); // Show play button
+                updatePlayheadUI(); // Position playhead UI needle
+            }); // End Reset binding
+
+            // Add Object Shape Trigger Buttons
+            document.querySelectorAll('[data-add-shape]').forEach(btn => { // Loop shape generator trigger buttons
+                btn.addEventListener('click', () => { // Handle shape creation click
+                    const shapeType = btn.getAttribute('data-add-shape'); // Extract requested target shape type name string
+                    const newObj = new SceneObject(shapeType, 300 + Math.random() * 100, 200 + Math.random() * 80); // Create new scene shape object
+                    state.objects.push(newObj); // Append new shape to scene objects array
+                    state.selectedObjectId = newObj.id; // Automatically focus new object selection
+                    renderObjectListUI(); // Refresh layer graph list
+                    updateInspectorUI(); // Refresh inspector properties panel
+                }); // End shape click binding
+            }); // End shape creation iteration
+
+            // Tab Navigation Switcher Binding
+            const tabProps = document.getElementById('tab-props'); // Properties tab DOM node
+            const tabPlugins = document.getElementById('tab-plugins'); // Plugins tab DOM node
+            const panelProps = document.getElementById('panel-props'); // Properties panel DOM element
+            const panelPlugins = document.getElementById('panel-plugins'); // Plugins panel DOM element
+
+            tabProps.addEventListener('click', () => { // Switch to Properties view tab
+                tabProps.className = 'flex-1 py-2.5 font-medium border-b-2 border-indigo-500 text-indigo-400 bg-slate-900/50'; // Highlight Properties tab
+                tabPlugins.className = 'flex-1 py-2.5 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200'; // Deactivate Plugins tab
+                panelProps.classList.remove('hidden'); // Reveal Properties inspector
+                panelPlugins.classList.add('hidden'); // Hide Plugins list panel
+            }); // End Properties tab click handle
+
+            tabPlugins.addEventListener('click', () => { // Switch to Plugins view tab
+                tabPlugins.className = 'flex-1 py-2.5 font-medium border-b-2 border-indigo-500 text-indigo-400 bg-slate-900/50'; // Highlight Plugins tab
+                tabProps.className = 'flex-1 py-2.5 font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200'; // Deactivate Properties tab
+                panelPlugins.classList.remove('hidden'); // Reveal Plugins list panel
+                panelProps.classList.add('hidden'); // Hide Properties inspector
+            }); // End Plugins tab click handle
+
+            // Add Keyframe Button Binding
+            document.getElementById('btn-add-keyframe').addEventListener('click', () => { // Insert keyframe click hook
+                if (!state.selectedObjectId) return; // Guard clause if no active object selected
+                const obj = state.objects.find(o => o.id === state.selectedObjectId); // Find active object target
+                if (!obj) return; // Guard check
+                
+                // Add or update existing keyframe at current timeline timestamp marker
+                const existingIdx = obj.keyframes.findIndex(k => Math.abs(k.time - state.currentTime) < 0.1); // Match keyframe within 0.1s radius window
+                const kfData = { time: Number(state.currentTime.toFixed(2)), x: obj.x, y: obj.y, scale: obj.scale, rotation: obj.rotation }; // Package current spatial properties payload
+                
+                if (existingIdx >= 0) { // Override existing nearby keyframe
+                    obj.keyframes[existingIdx] = kfData; // Replace keyframe payload frame
+                } else { // Append new keyframe
+                    obj.keyframes.push(kfData); // Push keyframe into object tracks array
+                } // End keyframe update conditional
+                
+                renderKeyframeMarkersUI(); // Re-render visual diamond timeline keyframe pins
+            }); // End Add Keyframe event binding
+
+            // Inspector Live Form Inputs Event Binding
+            document.getElementById('prop-name').addEventListener('input', (e) => { // Label input change handle
+                const obj = getSelectedObject(); if (obj) { obj.name = e.target.value; renderObjectListUI(); } // Sync object layer title label
+            }); // End label input handle
+            document.getElementById('prop-x').addEventListener('input', (e) => { // Position X input change handle
+                const obj = getSelectedObject(); if (obj) obj.x = Number(e.target.value); // Sync X position coordinate scalar
+            }); // End X position input handle
+            document.getElementById('prop-y').addEventListener('input', (e) => { // Position Y input change handle
+                const obj = getSelectedObject(); if (obj) obj.y = Number(e.target.value); // Sync Y position coordinate scalar
+            }); // End Y position input handle
+            document.getElementById('prop-scale').addEventListener('input', (e) => { // Scale ratio input change handle
+                const obj = getSelectedObject(); if (obj) obj.scale = Number(e.target.value); // Sync object scale factor multiplier
+            }); // End scale input handle
+            document.getElementById('prop-rotation').addEventListener('input', (e) => { // Rotation degree input change handle
+                const obj = getSelectedObject(); if (obj) obj.rotation = Number(e.target.value); // Sync object orientation degrees
+            }); // End rotation input handle
+            document.getElementById('prop-color').addEventListener('input', (e) => { // Color picker input change handle
+                const obj = getSelectedObject(); if (obj) { obj.color = e.target.value; document.getElementById('prop-color-hex').value = e.target.value; } // Sync color fill
+            }); // End color picker handle
+
+            // Delete Object Action Button Binding
+            document.getElementById('btn-delete-object').addEventListener('click', () => { // Delete button click hook
+                if (!state.selectedObjectId) return; // Exit check if no object active selection
+                state.objects = state.objects.filter(o => o.id !== state.selectedObjectId); // Purge active object from array
+                state.selectedObjectId = null; // Reset selection state variable to null
+                renderObjectListUI(); // Re-render layer hierarchy tree
+                updateInspectorUI(); // Reset inspector inputs state back to default clear screen
+            }); // End delete action handle
+
+            // Scene Presets Selection Change Event Binding
+            document.getElementById('preset-select').addEventListener('change', (e) => { // Preset option change handle
+                loadPresetScene(e.target.value); // Load target preset scene setup
+            }); // End preset selector binding
+
+            // Export Scene JSON Data Event Binding
+            document.getElementById('btn-export').addEventListener('click', () => { // Export JSON action handle
+                const exportData = JSON.stringify({ duration: state.duration, objects: state.objects }, null, 2); // Serialize scene metadata payload into JSON string
+                const blob = new Blob([exportData], { type: 'application/json' }); // Create downloadable file BLOB object
+                const url = URL.createObjectURL(blob); // Generate virtual URL link string reference
+                const a = document.createElement('a'); // Create dummy download anchor node
+                a.href = url; a.download = 'scene_animation.json'; // Set download file name
+                a.click(); // Programmatically execute file save download prompt trigger
+                URL.revokeObjectURL(url); // Clean up memory allocation URL handle
+            }); // End JSON export binding
+        } // End setupUIControls function
+
+        // SECTION PIVOT: Dynamic Inspector & Plugin UI Builders
+        function getSelectedObject() { // Helper returns currently selected object instance reference
+            return state.objects.find(o => o.id === state.selectedObjectId); // Retrieve match from array
+        } // End getSelectedObject helper
+
+        function updateInspectorUI() { // Sync inspector inputs with currently active selected object state
+            const obj = getSelectedObject(); // Fetch selected object model
+            const form = document.getElementById('inspector-form'); // Inspector form wrapper node
+            const emptyMsg = document.getElementById('no-selection-msg'); // No selection placeholder message node
+
+            if (!obj) { // No object selected branch
+                form.classList.add('hidden'); // Hide property inputs form panel
+                emptyMsg.classList.remove('hidden'); // Display empty placeholder message element
+                renderKeyframeMarkersUI(); // Wipe active keyframe visual pin diamonds
+                return; // Exit helper early
+            } // End empty check branch
+
+            emptyMsg.classList.add('hidden'); // Hide placeholder text
+            form.classList.remove('hidden'); // Show property inputs form
+
+            // Set input values to match object model parameters
+            document.getElementById('prop-name').value = obj.name; // Fill layer name string input
+            document.getElementById('prop-x').value = Math.round(obj.x); // Fill X coordinate position input
+            document.getElementById('prop-y').value = Math.round(obj.y); // Fill Y coordinate position input
+            document.getElementById('prop-scale').value = obj.scale.toFixed(1); // Fill scale ratio multiplier input
+            document.getElementById('prop-rotation').value = Math.round(obj.rotation); // Fill rotation angle degrees input
+            document.getElementById('prop-color').value = obj.color; // Set swatch color picker hex
+            document.getElementById('prop-color-hex').value = obj.color; // Fill text hex string input
+
+            renderKeyframeMarkersUI(); // Re-render visual timeline keyframe marker pins
+        } // End updateInspectorUI function
+
+        function renderObjectListUI() { // Build scene layer stack items list UI
+            const container = document.getElementById('object-list'); // Layer stack wrapper container node
+            container.innerHTML = ''; // Wipe pre-existing UI layer rows
+
+            state.objects.forEach(obj => { // Iterate scene graph items
+                const item = document.createElement('div'); // Create layer item row container
+                const isSelected = obj.id === state.selectedObjectId; // Check selection state match
+                
+                item.className = `p-2 rounded border flex items-center justify-between text-xs cursor-pointer transition ${isSelected ? 'bg-indigo-900/40 border-indigo-500/80 text-indigo-200' : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'}`; // Dynamic CSS styling condition toggle
+                item.innerHTML = ` 
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-regular ${obj.type === 'rect' ? 'fa-square text-indigo-400' : (obj.type === 'circle' ? 'fa-circle text-sky-400' : 'fa-star text-amber-400')}"></i>
+                        <span class="font-medium">${obj.name}</span>
+                    </div>
+                    <span class="text-3xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 uppercase font-mono">${obj.type}</span>
+                `; // Inner HTML structure string binding
+
+                item.addEventListener('click', () => { // Handle click item row selection
+                    state.selectedObjectId = obj.id; // Assign focus target object ID handle
+                    renderObjectListUI(); // Re-render layer stack list
+                    updateInspectorUI(); // Refresh property inputs
+                }); // End item click event handle
+
+                container.appendChild(item); // Append constructed layer item node into DOM stack container
+            }); // End objects array iterate loop
+        } // End renderObjectListUI function
+
+        function renderPluginListUI() { // Render plugin toggle cards inside right sidebar panel
+            const container = document.getElementById('plugin-list'); // Plugin cards wrapper DOM element
+            container.innerHTML = ''; // Clear existing plugin cards
+
+            Object.values(state.plugins).forEach(plugin => { // Iterate through all registered plugin instances
+                const card = document.createElement('div'); // Build card DOM node element
+                card.className = 'p-3 bg-slate-900 border border-slate-800 rounded-lg space-y-2'; // Apply card styling classes
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="font-semibold text-xs text-slate-200">${plugin.name}</div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" ${plugin.enabled ? 'checked' : ''} class="sr-only peer" data-plugin-toggle="${plugin.id}">
+                            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                    <div class="text-2xs text-slate-400">${plugin.description}</div>
+                `; // Card HTML string layout with embedded toggle switch slider control
+
+                const toggleInput = card.querySelector(`[data-plugin-toggle="${plugin.id}"]`); // Locate checkbox input DOM handle
+                toggleInput.addEventListener('change', (e) => { // Toggle switch change event listener
+                    plugin.enabled = e.target.checked; // Sync active state boolean parameter on plugin model instance
+                }); // End toggle listener handle
+
+                container.appendChild(card); // Mount constructed plugin card into plugin list container
+            }); // End plugin iteration loop
+        } // End renderPluginListUI function
+
+        // SECTION PIVOT: Preset Scene Loader Utilities
+        function loadPresetScene(presetType) { // Load preset scene setups
+            if (!presetType) return; // Exit if empty preset choice selected
+            
+            state.objects = []; // Clear existing scene objects graph
+            state.selectedObjectId = null; // Unset selected object target
+
+            if (presetType === 'cosmic') { // Load Cosmic Galaxy preset layout
+                state.plugins['dust'].enabled = true; // Enable dust particles plugin
+                state.plugins['glow'].enabled = true; // Enable glow bloom plugin
+                state.plugins['trails'].enabled = false; // Disable motion trails plugin
+
+                const centerSun = new SceneObject('circle', 400, 240); // Build central sun graphic
+                centerSun.color = '#f59e0b'; // Gold sun color hex
+                centerSun.keyframes = [ { time: 0, x: 400, y: 240, scale: 1.8, rotation: 0 }, { time: 10, x: 400, y: 240, scale: 1.8, rotation: 360 } ]; // Sun keyframes
+                
+                const planet = new SceneObject('star', 250, 240); // Build orbiting star planet graphic
+                planet.color = '#38bdf8'; // Cyan planet color hex
+                planet.keyframes = [ // Orbiting keyframes sequence
+                    { time: 0, x: 250, y: 240, scale: 0.8, rotation: 0 }, // Position 0s
+                    { time: 2.5, x: 400, y: 120, scale: 1.2, rotation: 90 }, // Position 2.5s
+                    { time: 5, x: 550, y: 240, scale: 0.8, rotation: 180 }, // Position 5s
+                    { time: 7.5, x: 400, y: 360, scale: 0.6, rotation: 270 }, // Position 7.5s
+                    { time: 10, x: 250, y: 240, scale: 0.8, rotation: 360 } // Position 10s
+                ]; // End orbit keyframes
+
+                state.objects.push(centerSun, planet); // Push objects to scene graph
+            } else if (presetType === 'neon') { // Load Neon Bounce preset layout
+                state.plugins['glow'].enabled = true; // Enable glowing light effect
+                state.plugins['dust'].enabled = false; // Disable dust
+                state.plugins['trails'].enabled = true; // Enable motion trails
+
+                const neonRect = new SceneObject('rect', 150, 100); // Build bouncing neon square object
+                neonRect.color = '#ec4899'; // Vibrant pink fill color
+                neonRect.keyframes = [ // Bouncing animation sequence keyframes
+                    { time: 0, x: 150, y: 100, scale: 1.0, rotation: 0 }, // Top left
+                    { time: 2.5, x: 650, y: 100, scale: 1.4, rotation: 180 }, // Top right
+                    { time: 5, x: 650, y: 380, scale: 1.0, rotation: 360 }, // Bottom right
+                    { time: 7.5, x: 150, y: 380, scale: 0.7, rotation: 540 }, // Bottom left
+                    { time: 10, x: 150, y: 100, scale: 1.0, rotation: 720 } // Loop top left
+                ]; // End bouncing keyframes
+
+                state.objects.push(neonRect); // Push neon box to scene
+            } else if (presetType === 'particle') { // Load Particle Wave preset setup
+                state.plugins['dust'].enabled = true; // Activate ambient dust particles
+                state.plugins['glow'].enabled = false; // Turn off glow
+                state.plugins['trails'].enabled = false; // Turn off trails
+
+                for (let i = 0; i < 5; i++) { // Generate 5 staggered floating wave shapes
+                    const circle = new SceneObject('circle', 150 + i * 120, 240); // Calculate horizontal starting offset
+                    circle.color = i % 2 === 0 ? '#818cf8' : '#34d399'; // Alternate indigo and emerald colors
+                    circle.keyframes = [ // Wave pulsation keyframes track
+                        { time: 0, x: 150 + i * 120, y: 240, scale: 1.0, rotation: 0 }, // Center
+                        { time: 2.5, x: 150 + i * 120, y: 140 + (i % 2 * 100), scale: 1.5, rotation: 180 }, // Crest peak
+                        { time: 5, x: 150 + i * 120, y: 240, scale: 1.0, rotation: 360 }, // Center
+                        { time: 7.5, x: 150 + i * 120, y: 340 - (i % 2 * 100), scale: 0.6, rotation: 540 }, // Trough dip
+                        { time: 10, x: 150 + i * 120, y: 240, scale: 1.0, rotation: 720 } // Reset center
+                    ]; // End wave keyframes
+                    state.objects.push(circle); // Push shape into object array graph
+                } // End generation loop
+            } // End preset conditional choices
+
+            renderPluginListUI(); // Refresh plugin list state toggles in sidebar
+            renderObjectListUI(); // Refresh layer graph hierarchy view
+            updateInspectorUI(); // Clear/refresh inspector inputs
+        } // End loadPresetScene function
+    </script> <!-- End main application script block -->
+</body> <!-- End document body -->
+</html> <!-- End root HTML document -->
